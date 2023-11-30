@@ -39,7 +39,7 @@ def load_data(base_path="../data"):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, num_question, k=100):
+    def __init__(self, num_question, k=50, b=10):
         """ Initialize a class AutoEncoder.
 
         :param num_question: int
@@ -48,17 +48,21 @@ class AutoEncoder(nn.Module):
         super(AutoEncoder, self).__init__()
 
         # Define linear functions.
-        self.g = nn.Linear(num_question, k)
-        self.h = nn.Linear(k, num_question)
+        self.layer1 = nn.Linear(num_question, k)
+        self.layer2 = nn.Linear(k, b)
+        self.layer3 = nn.Linear(b, k)
+        self.layer4 = nn.Linear(k, num_question)
 
     def get_weight_norm(self):
         """ Return ||W^1||^2 + ||W^2||^2.
 
         :return: float
         """
-        g_w_norm = torch.norm(self.g.weight, 2) ** 2
-        h_w_norm = torch.norm(self.h.weight, 2) ** 2
-        return g_w_norm + h_w_norm
+        l1_w_norm = torch.norm(self.layer1.weight, 2) ** 2
+        l2_w_norm = torch.norm(self.layer2.weight, 2) ** 2
+        l3_w_norm = torch.norm(self.layer3.weight, 2) ** 2
+        l4_w_norm = torch.norm(self.layer4.weight, 2) ** 2
+        return l1_w_norm + l2_w_norm + l3_w_norm + l4_w_norm
 
     def forward(self, inputs):
         """ Return a forward pass given inputs.
@@ -70,10 +74,15 @@ class AutoEncoder(nn.Module):
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
-        g = self.g(inputs)
-        output = F.sigmoid(g)
-        h = self.h(output)
-        out = F.sigmoid(h)
+        g = self.layer1(inputs)
+        output_1 = F.sigmoid(g)
+        h = self.layer2(output_1)
+        output_2 = F.sigmoid(h)
+        i = self.layer3(output_2)
+        output_3 = F.sigmoid(i)
+        j = self.layer4(output_3)
+        out = F.sigmoid(j)
+
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
@@ -233,27 +242,21 @@ def plot_curves(train_losses, valid_losses, train_accuracies, valid_accuracies):
 def main():
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
-    #####################################################################
-    # TODO:                                                             #
-    # Try out 5 different k and select the best k using the             #
-    # validation set.                                                   #
-    #####################################################################
     # Set model hyperparameters.
     num_questions = train_matrix.shape[1]
     k = 50
-    model = AutoEncoder(num_questions, k)
+    b = 20
+    model = AutoEncoder(num_questions, k, b)
 
     # Set optimization hyperparameters.
     lr = 0.01
     num_epoch = 75
     lamb = 0.01
 
-    plot = False
-    train(model, lr, lamb, train_matrix, zero_train_matrix,
-          valid_data, num_epoch, plot)
+    train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch, plot=False)
 
     test_accuracy = evaluate(model, zero_train_matrix, test_data)
-    print("Test Accuracy:", test_accuracy)
+    print(f"Test Accuracy :", test_accuracy)
 
     #####################################################################
     #                       END OF YOUR CODE                            #
