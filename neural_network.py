@@ -39,7 +39,7 @@ def load_data(base_path="../data"):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, num_question, k=50, b=10):
+    def __init__(self, num_question, k=100):
         """ Initialize a class AutoEncoder.
 
         :param num_question: int
@@ -48,21 +48,17 @@ class AutoEncoder(nn.Module):
         super(AutoEncoder, self).__init__()
 
         # Define linear functions.
-        self.layer1 = nn.Linear(num_question, k)
-        self.layer2 = nn.Linear(k, b)
-        self.layer3 = nn.Linear(b, k)
-        self.layer4 = nn.Linear(k, num_question)
+        self.g = nn.Linear(num_question, k)
+        self.h = nn.Linear(k, num_question)
 
     def get_weight_norm(self):
         """ Return ||W^1||^2 + ||W^2||^2.
 
         :return: float
         """
-        l1_w_norm = torch.norm(self.layer1.weight, 2) ** 2
-        l2_w_norm = torch.norm(self.layer2.weight, 2) ** 2
-        l3_w_norm = torch.norm(self.layer3.weight, 2) ** 2
-        l4_w_norm = torch.norm(self.layer4.weight, 2) ** 2
-        return l1_w_norm + l2_w_norm + l3_w_norm + l4_w_norm
+        g_w_norm = torch.norm(self.g.weight, 2) ** 2
+        h_w_norm = torch.norm(self.h.weight, 2) ** 2
+        return g_w_norm + h_w_norm
 
     def forward(self, inputs):
         """ Return a forward pass given inputs.
@@ -71,25 +67,21 @@ class AutoEncoder(nn.Module):
         :return: user vector.
         """
         #####################################################################
+        # TODO:                                                             #
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
-        g = self.layer1(inputs)
-        output_1 = F.sigmoid(g)
-        h = self.layer2(output_1)
-        output_2 = F.sigmoid(h)
-        i = self.layer3(output_2)
-        output_3 = F.sigmoid(i)
-        j = self.layer4(output_3)
-        out = F.sigmoid(j)
-
+        g = self.g(inputs)
+        output = F.sigmoid(g)
+        h = self.h(output)
+        out = F.sigmoid(h)
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
         return out
 
 
-def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, plot=False):
+def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
     """ Train the neural network, where the objective also includes
     a regularizer.
 
@@ -100,9 +92,10 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
     :param zero_train_data: 2D FloatTensor
     :param valid_data: Dict
     :param num_epoch: int
-    :param plot: bool
     :return: None
     """
+    # TODO: Add a regularizer to the cost function. 
+
     # Tell PyTorch you are training the model.
     model.train()
 
@@ -112,13 +105,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
 
     # Storing objectives for plotting
     train_losses = []
-    train_accuracies = []
-    valid_losses = []
     valid_accuracies = []
-    # for train acc
-    train_data_dict = {}
-    if plot:
-        train_data_dict = load_train_csv("../data")
 
     for epoch in range(0, num_epoch):
         train_loss = 0.
@@ -134,26 +121,35 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
+            # added L2 regularization term
             loss = torch.sum((output - target) ** 2.) + (model.get_weight_norm() * lamb / 2)
             loss.backward()
 
             train_loss += loss.item()
             optimizer.step()
 
-        if plot:
-            train_acc = evaluate(model, zero_train_data, train_data_dict)
-            valid_acc = evaluate(model, zero_train_data, valid_data)
-            valid_loss = compute_valid_loss(model, zero_train_data, valid_data)
-            train_losses.append(train_loss)
-            valid_losses.append(valid_loss)
-            train_accuracies.append(train_acc)
-            valid_accuracies.append(valid_acc)
+        valid_acc = evaluate(model, zero_train_data, valid_data)
 
-        print("Epoch: {} \tTraining Cost: {:.6f}".format(epoch, train_loss))
+        print("Epoch: {} \tTraining Cost: {:.6f}\t "
+              "Valid Acc: {}".format(epoch, train_loss, valid_acc))
+        train_losses.append(train_loss)
+        valid_accuracies.append(valid_acc)
 
-    if plot:
-        plot_curves(train_losses, valid_losses, train_accuracies, valid_accuracies)
+    # plotting for d
+    _, axes = plt.subplots(nrows=1, ncols=2)
+    axes[0].set_title('Training Loss over Epochs')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel("Loss")
+    axes[0].plot(train_losses, color='blue', label='Training Loss')
 
+    axes[1].set_title('Validation Accuracy over Epochs')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel("Accuracy")
+    axes[1].plot(valid_accuracies, color='orange', label='Validation Accuracy')
+
+    axes[0].legend()
+    axes[1].legend()
+    plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -182,81 +178,36 @@ def evaluate(model, train_data, valid_data):
         if guess == valid_data["is_correct"][i]:
             correct += 1
         total += 1
-
     return correct / float(total)
-
-
-def compute_valid_loss(model, train_data, valid_data):
-    """ Evaluate the valid_data loss on the current model.
-
-        :param model: Module
-        :param train_data: 2D FloatTensor
-        :param valid_data: A dictionary {user_id: list,
-        question_id: list, is_correct: list}
-        :return: float
-        """
-    # Tell PyTorch you are evaluating the model.
-    model.eval()
-
-    total_loss = 0
-
-    for i, u in enumerate(valid_data["user_id"]):
-        inputs = Variable(train_data[u]).unsqueeze(0)
-        output = model(inputs)
-
-        target_label = valid_data['is_correct'][i]
-        # index for output is valid_data['question_id'][i], since rows
-        # don't match up
-        prediction = output[0][valid_data['question_id'][i]].item()
-        total_loss += (prediction - target_label) ** 2
-
-    return total_loss
-
-
-def plot_curves(train_losses, valid_losses, train_accuracies, valid_accuracies):
-    _, axes = plt.subplots(nrows=2, ncols=2)
-    axes[0, 0].set_title('Training Loss over Epochs')
-    axes[0, 0].set_xlabel('Epoch')
-    axes[0, 0].set_ylabel("Loss")
-    axes[0, 0].plot(train_losses, color='blue', label='Training Loss')
-
-    axes[0, 1].set_title('Validation Loss over Epochs')
-    axes[0, 1].set_xlabel('Epoch')
-    axes[0, 1].set_ylabel("Loss")
-    axes[0, 1].plot(valid_losses, color='orange', label='Validation Loss')
-
-    axes[1, 0].set_title('Training Accuracy over Epochs')
-    axes[1, 0].set_xlabel('Epoch')
-    axes[1, 0].set_ylabel("Accuracy")
-    axes[1, 0].plot(train_accuracies, color='blue', label='Validation Accuracy')
-
-    axes[1, 1].set_title('Validation Accuracy over Epochs')
-    axes[1, 1].set_xlabel('Epoch')
-    axes[1, 1].set_ylabel("Accuracy")
-    axes[1, 1].plot(valid_accuracies, color='orange', label='Validation Accuracy')
-
-    plt.tight_layout()
-    plt.show()
 
 
 def main():
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
+    #####################################################################
+    # TODO:                                                             #
+    # Try out 5 different k and select the best k using the             #
+    # validation set.                                                   #
+    #####################################################################
     # Set model hyperparameters.
     num_questions = train_matrix.shape[1]
     k = 50
-    b = 20
-    model = AutoEncoder(num_questions, k, b)
+    # k_list = [10, 50, 100, 200, 500]
+    model = AutoEncoder(num_questions, k)
 
     # Set optimization hyperparameters.
     lr = 0.01
-    num_epoch = 75
-    lamb = 0.001
+    # lr_list = [0.01, 0.05, 0.1]
+    num_epoch = 25
+    # epoch_list = [10, 25, 50, 100, 250, 500]
+    lamb = 0.
+    # lamb_list = [0.001, 0.01, 0.1, 1]
 
-    train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch, plot=False)
+    train(model, lr, lamb, train_matrix, zero_train_matrix,
+          valid_data, num_epoch)
 
     test_accuracy = evaluate(model, zero_train_matrix, test_data)
-    print(f"Test Accuracy :", test_accuracy)
+    print("Test Accuracy:", test_accuracy)
 
     #####################################################################
     #                       END OF YOUR CODE                            #
