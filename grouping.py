@@ -6,7 +6,7 @@ import os
 import csv
 
 
-student_data_path = "../data/student_meta.csv"
+student_data_path = "data/student_meta.csv"
 
 def _load_csv(path):
     # A helper function to load the csv file.
