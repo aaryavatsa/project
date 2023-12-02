@@ -2,6 +2,7 @@ from utils import *
 
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 
 def sigmoid(x):
@@ -103,10 +104,10 @@ def irt(data, val_data, lr, iterations):
 
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
-        # print("NLLK: {} \t Score: {}".format(neg_lld, score))
+        print("NLLK: {} \t Score: {}".format(neg_lld_train, score), end="\r")
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
-    return theta, beta, neg_lld_train_list, neg_lld_val_list, val_acc_lst
+    return theta, beta, val_acc_lst, neg_lld_train_list, neg_lld_val_list
 
 
 def evaluate(data, theta, beta):
@@ -131,7 +132,7 @@ def evaluate(data, theta, beta):
 def main():
     train_data = load_train_csv("../data")
     # You may optionally use the sparse matrix.
-    sparse_matrix = load_train_sparse("../data")
+    # sparse_matrix = load_train_sparse("../data")
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
@@ -140,30 +141,82 @@ def main():
 
     theta, beta, val_acc_lst, train_lld_lst, val_lld_lst = \
         irt(train_data, val_data, lr, iterations)
-    iterations_lst = list(range(iterations))
+    
 
-    print(np.max(beta), np.min(beta), beta[0], beta[1], beta[-1])
-
-    plt.plot(iterations_lst, train_lld_lst, "r-", label="training")
-    plt.plot(iterations_lst, val_lld_lst, "b-", label="validation")
+    # Plot the training curve of training and validation log-likelihood as a function of iterations.
+    plt.figure()
+    plt.plot(range(iterations), train_lld_lst, label="train")
+    plt.plot(range(iterations), val_lld_lst, label="validation")
     plt.xlabel("Iterations")
-    plt.ylabel("Negative likelihood")
+    plt.ylabel("Negative log-likelihood")
     plt.legend()
-    plt.show()
-
-    plt.plot(iterations_lst, val_acc_lst)
-    plt.xlabel("Iterations")
-    plt.ylabel("Validation accuracy")
-    plt.show()
+    plt.savefig("irt_training_curve.png")
 
     val_acc = evaluate(val_data, theta, beta)
     test_acc = evaluate(test_data, theta, beta)
+
     print("Validation accuracy: {}".format(val_acc))
     print("Test accuracy: {}".format(test_acc))
+
+    # Part d
+    # Select three questions j1,j2, and j3. Using the trained θ and β, plot three curves on the same plot 
+    # that shows the probability of the correct response p(cij = 1) as a function of θ given a question j. 
+    # Comment on the shape of the curves and briefly describe what these curves represent.
+
+    # j1 = 373
+    # j2 = 910
+    # j3 = 1432
+
+    # theta_range = np.linspace(-3, 3, 100)
+    # p1 = sigmoid(theta_range - beta[j1])
+    # p2 = sigmoid(theta_range - beta[j2])
+    # p3 = sigmoid(theta_range - beta[j3])
+
+    # plt.figure()
+    # plt.plot(theta_range, p1, label=f"j1 = {j1}")
+    # plt.plot(theta_range, p2, label=f"j2 = {j2}")
+    # plt.plot(theta_range, p3, label=f"j3 = {j3}")
+    # plt.xlabel("Theta")
+    # plt.ylabel("Probability of correct response")
+    # plt.legend()
+    # plt.savefig("irt_prob_correct_response.png")
+    # N, D = 542, 1774
+    # q_list = random.choices(np.arange(D), k=3)
+    # plot_legends = []
+    # for i in range(3):
+    #     plot_legends.append(f'question_id: {q_list[i]}')
+
+    # theta_range = np.linspace(-5, 5, 100)
+
+    # curve_colors = ['r', 'g', 'b']
+    # fig, ax = plt.subplots()
+
+    # for i in range(3):
+    #     q = q_list[i]
+    #     # list of probabilities p(c_uq) for each theta given question q
+    #     prob_list = sigmoid(theta_range-beta[q])
+    #     # plot p(c_uq) as a function of theta given question q
+    #     ax.plot(theta_range, prob_list, curve_colors[i])
+
+    # ax.xaxis.set_label_text('theta')
+    # ax.yaxis.set_label_text('p(c_ij)')
+    # ax.set_title(
+    #     'p(c_ij) as a function of theta given five different questions')
+    # ax.legend(plot_legends)
+    # plt.savefig('p4d.png')
+
+    theta = np.sort(theta)
+    plt.figure(2)
+    for j in range(5):
+        beta_j = beta[j]
+        cij = sigmoid(theta - beta_j)
+        plt.plot(theta, cij, label="Question #"+str(j))
+    plt.title("Probability of Correct Response vs. Theta")
+    plt.ylabel("Probability")
+    plt.xlabel("Theta")
+    plt.legend()
+    plt.savefig("p4d.png")
+
     
-
-
-
-
 if __name__ == "__main__":
     main()
