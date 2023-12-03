@@ -13,15 +13,6 @@ import matplotlib.pyplot as plt
 from grouping import *
 
 
-train_path = "data/train_sparse.npz"
-og_train_matrix = load_train_sparse(train_path).toarray()
-og_zero_train_matrix = og_train_matrix.copy()
-# Fill in the missing entries to 0.
-og_zero_train_matrix[np.isnan(og_train_matrix)] = 0
-# Change to Float Tensor for PyTorch.
-og_zero_train_matrix = torch.FloatTensor(og_zero_train_matrix)
-
-
 def load_data(base_path="data"):
     """ Load the data in PyTorch Tensor.
 
@@ -35,20 +26,11 @@ def load_data(base_path="data"):
         test_data: A dictionary {user_id: list,
         user_id: list, is_correct: list}
     """
-    train_path = "data/train_by_gender_2.npz"
+
+    train_path = os.path.join(base_path, "train_sparse.npz")
     train_matrix = load_train_sparse(train_path).toarray()
-    valid_data = generate_gender_data("data/valid_data.csv", gender=2)
-    test_data = generate_gender_data("data/test_data.csv",gender=2)
-
-    # train_path = "data/train_by_age_2.npz"
-    # train_matrix = load_train_sparse(train_path).toarray()
-    # valid_data = generate_age_data("data/valid_data.csv", age=2)
-    # test_data = generate_age_data("data/test_data.csv",age=2)
-
-    # train_path = "data/train_sparse.npz"
-    # train_matrix = load_train_sparse(train_path).toarray()
-    # valid_data = load_valid_csv(base_path)
-    # test_data = load_public_test_csv(base_path)
+    valid_data = load_valid_csv(base_path)
+    test_data = load_public_test_csv(base_path)
 
     zero_train_matrix = train_matrix.copy()
     # Fill in the missing entries to 0.
@@ -72,7 +54,9 @@ class AutoEncoder(nn.Module):
         # Define linear functions.
         self.layer1 = nn.Linear(num_question, k)
         self.layer2 = nn.Linear(k, b)
+        self.dropout1 = nn.Dropout(0.7)
         self.layer3 = nn.Linear(b, k)
+        self.dropout2 = nn.Dropout(0.7)
         self.layer4 = nn.Linear(k, num_question)
 
     def get_weight_norm(self):
@@ -93,25 +77,23 @@ class AutoEncoder(nn.Module):
         :return: user vector.
         """
         #####################################################################
-        # Implement the function as described in the docstring.             #
-        # Use sigmoid activations for f and g.                              #
+        # Added two layers with dropout                                     #
         #####################################################################
-        g = self.layer1(inputs)
-        output_1 = F.sigmoid(g)
-        h = self.layer2(output_1)
-        output_2 = F.sigmoid(h)
-        i = self.layer3(output_2)
-        output_3 = F.sigmoid(i)
-        j = self.layer4(output_3)
-        out = F.sigmoid(j)
-
+        f = self.layer1(inputs)
+        g = F.sigmoid(f)
+        h = self.layer2(g)
+        i = self.dropout1(h)
+        j = self.layer3(i)
+        k = self.dropout2(j)
+        l = self.layer4(k)
+        out = F.sigmoid(l)
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
         return out
 
 
-def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, plot=False):
+def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, data_dict, user_ids, plot=False):
     """ Train the neural network, where the objective also includes
     a regularizer.
 
@@ -122,6 +104,8 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
     :param zero_train_data: 2D FloatTensor
     :param valid_data: Dict
     :param num_epoch: int
+    :param data_dict: Dict
+    :param user_ids: List
     :param plot: bool
     :return: None
     """
@@ -130,7 +114,8 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
 
     # Define optimizers and loss function.
     optimizer = optim.SGD(model.parameters(), lr=lr)
-    num_student = train_data.shape[0]
+    # num_student = train_data.shape[0]
+    
 
     # Storing objectives for plotting
     train_losses = []
@@ -140,12 +125,14 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch, p
     # for train acc
     train_data_dict = {}
     if plot:
-        train_data_dict = load_train_csv("../data")
+        # train_data_dict = load_train_csv("data")
+        train_data_dict = data_dict
+    
 
     for epoch in range(0, num_epoch):
         train_loss = 0.
 
-        for user_id in range(num_student):
+        for user_id in user_ids:
             inputs = Variable(zero_train_data[user_id]).unsqueeze(0)
             target = inputs.clone()
 
@@ -264,6 +251,16 @@ def plot_curves(train_losses, valid_losses, train_accuracies, valid_accuracies):
 def main():
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
+    # Overwrite valid_data and test_data with groups
+    valid_data = generate_age_data("data/valid_data.csv", age=0)
+    test_data = generate_age_data("data/test_data.csv", age=0)
+
+    age_dic = group_user_id_by_age()
+    data_dict = generate_age_data("data/train_data.csv", age=0)
+
+    # gender_dic = group_user_id_by_gender()
+    # data_dict = generate_gender_data("data/train_data.csv", gender=0)
+
     # Set model hyperparameters.
     num_questions = train_matrix.shape[1]
     k = 50
@@ -272,12 +269,22 @@ def main():
 
     # Set optimization hyperparameters.
     lr = 0.01
-    num_epoch = 75
+    num_epoch = 35
     lamb = 0.001
 
-    train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch, plot=False)
+    train(model=model, 
+          lr=lr, 
+          lamb=lamb, 
+          train_data=train_matrix, 
+          zero_train_data=zero_train_matrix, 
+          valid_data=valid_data, 
+          num_epoch=num_epoch, 
+          data_dict=data_dict,
+          user_ids=age_dic["<2004"], # change this according to group
+          plot=True,
+          )
 
-    test_accuracy = evaluate(model, train_data=og_zero_train_matrix, valid_data=test_data)
+    test_accuracy = evaluate(model, train_data=zero_train_matrix, valid_data=test_data)
     print(f"Test Accuracy :", test_accuracy)
 
     #####################################################################

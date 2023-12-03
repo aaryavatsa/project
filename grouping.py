@@ -41,7 +41,7 @@ def _load_csv(path):
 def group_user_id_by_age(datapath=student_data_path) -> dict:
     """
     Return dictionary of user_id grouped by birth year.
-    The groups are <2003, 2003-2005, >2005
+    The groups are <2004, 2004-2005, >2005
     Keys: string of birth year
     Values: list of user_id
     """
@@ -51,18 +51,18 @@ def group_user_id_by_age(datapath=student_data_path) -> dict:
     birth_year = student_data["year_of_birth"]
 
     user_id_by_age = {
-        "<2003": [],
-        "2003-2005": [],
+        "<2004": [],
+        "2004-2005": [],
         ">2005": []
     }
 
     for i in range(len(user_id)):
         if birth_year[i] != "":
             year = int(birth_year[i])
-            if year < 2003:
-                user_id_by_age["<2003"].append(user_id[i])
+            if year < 2004:
+                user_id_by_age["<2004"].append(user_id[i])
             elif year < 2006:
-                user_id_by_age["2003-2005"].append(user_id[i])
+                user_id_by_age["2004-2005"].append(user_id[i])
             else:
                 user_id_by_age[">2005"].append(user_id[i])
 
@@ -103,9 +103,9 @@ def group_user_id_by_gender(datapath=student_data_path):
 def generate_age_data(path, age):
     age_groups = group_user_id_by_age()
     if age == 0:
-        user_ids = age_groups["<2003"]
+        user_ids = age_groups["<2004"]
     elif age == 1:
-        user_ids = age_groups["2003-2005"]
+        user_ids = age_groups["2004-2005"]
     else:
         user_ids = age_groups[">2005"]
 
@@ -172,8 +172,3 @@ def generate_gender_data(path, gender):
                 # is_correct might not be available.
                 pass
     return data
-
-dic = generate_age_data("data/test_data.csv", 2)
-print(len(dic["user_id"]))
-print(len(dic["question_id"]))
-print(len(dic["is_correct"]))
