@@ -37,8 +37,14 @@ def load_data(base_path="data"):
     """
     train_path = "data/train_by_gender_2.npz"
     train_matrix = load_train_sparse(train_path).toarray()
-    valid_data = generate_gender_data("data/valid_data.csv", 2)
-    test_data = generate_gender_data("data/test_data.csv", 2)
+    valid_data = generate_gender_data("data/valid_data.csv", gender=2)
+    test_data = generate_gender_data("data/test_data.csv",gender=2)
+
+    # train_path = "data/train_by_age_2.npz"
+    # train_matrix = load_train_sparse(train_path).toarray()
+    # valid_data = generate_age_data("data/valid_data.csv", age=2)
+    # test_data = generate_age_data("data/test_data.csv",age=2)
+
     # train_path = "data/train_sparse.npz"
     # train_matrix = load_train_sparse(train_path).toarray()
     # valid_data = load_valid_csv(base_path)
