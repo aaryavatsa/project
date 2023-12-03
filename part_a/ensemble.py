@@ -1,7 +1,7 @@
 # TODO: complete this file.
 
 from part_a.knn import *
-from utils import *
+from part_a.utils import *
 
 
 def generate_sample(matrix):

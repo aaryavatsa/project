@@ -1,4 +1,4 @@
-from utils import *
+from part_a.utils import *
 from torch.autograd import Variable
 
 import torch.nn as nn
@@ -24,7 +24,8 @@ def load_data(base_path="../data"):
         test_data: A dictionary {user_id: list,
         user_id: list, is_correct: list}
     """
-    train_matrix = load_train_sparse(base_path).toarray()
+    train_path = os.path.join(base_path, "train_sparse.npz")
+    train_matrix = load_train_sparse(train_path).toarray()
     valid_data = load_valid_csv(base_path)
     test_data = load_public_test_csv(base_path)
 

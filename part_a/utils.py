@@ -32,13 +32,13 @@ def _load_csv(path):
     return data
 
 
-def load_train_sparse(root_dir="/data"):
+def load_train_sparse(path="data/train_sparse.npz"):
     """ Load the training data as a spare matrix representation.
 
     :param root_dir: str
     :return: 2D sparse matrix
     """
-    path = os.path.join(root_dir, "train_sparse.npz")
+    # path = os.path.join(root_dir, "train_sparse.npz")
     if not os.path.exists(path):
         raise Exception("The specified path {} "
                         "does not exist.".format(os.path.abspath(path)))

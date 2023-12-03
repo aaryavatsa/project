@@ -1,4 +1,4 @@
-from utils import *
+from part_a.utils import *
 from torch.autograd import Variable
 
 import torch.nn as nn
@@ -10,8 +10,19 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
+from grouping import *
 
-def load_data(base_path="../data"):
+
+train_path = "data/train_sparse.npz"
+og_train_matrix = load_train_sparse(train_path).toarray()
+og_zero_train_matrix = og_train_matrix.copy()
+# Fill in the missing entries to 0.
+og_zero_train_matrix[np.isnan(og_train_matrix)] = 0
+# Change to Float Tensor for PyTorch.
+og_zero_train_matrix = torch.FloatTensor(og_zero_train_matrix)
+
+
+def load_data(base_path="data"):
     """ Load the data in PyTorch Tensor.
 
     :return: (zero_train_matrix, train_data, valid_data, test_data)
@@ -24,9 +35,14 @@ def load_data(base_path="../data"):
         test_data: A dictionary {user_id: list,
         user_id: list, is_correct: list}
     """
-    train_matrix = load_train_sparse(base_path).toarray()
-    valid_data = load_valid_csv(base_path)
-    test_data = load_public_test_csv(base_path)
+    train_path = "data/train_by_gender_2.npz"
+    train_matrix = load_train_sparse(train_path).toarray()
+    valid_data = generate_gender_data("data/valid_data.csv", 2)
+    test_data = generate_gender_data("data/test_data.csv", 2)
+    # train_path = "data/train_sparse.npz"
+    # train_matrix = load_train_sparse(train_path).toarray()
+    # valid_data = load_valid_csv(base_path)
+    # test_data = load_public_test_csv(base_path)
 
     zero_train_matrix = train_matrix.copy()
     # Fill in the missing entries to 0.
@@ -255,7 +271,7 @@ def main():
 
     train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch, plot=False)
 
-    test_accuracy = evaluate(model, zero_train_matrix, test_data)
+    test_accuracy = evaluate(model, train_data=og_zero_train_matrix, valid_data=test_data)
     print(f"Test Accuracy :", test_accuracy)
 
     #####################################################################
