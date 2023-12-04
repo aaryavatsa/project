@@ -180,42 +180,6 @@ def main():
     plt.ylabel("Probability of correct response")
     plt.legend()
     plt.savefig("p4d.png")
-    # N, D = 542, 1774
-    # q_list = random.choices(np.arange(D), k=3)
-    # plot_legends = []
-    # for i in range(3):
-    #     plot_legends.append(f'question_id: {q_list[i]}')
-
-    # theta_range = np.linspace(-5, 5, 100)
-
-    # curve_colors = ['r', 'g', 'b']
-    # fig, ax = plt.subplots()
-
-    # for i in range(3):
-    #     q = q_list[i]
-    #     # list of probabilities p(c_uq) for each theta given question q
-    #     prob_list = sigmoid(theta_range-beta[q])
-    #     # plot p(c_uq) as a function of theta given question q
-    #     ax.plot(theta_range, prob_list, curve_colors[i])
-
-    # ax.xaxis.set_label_text('theta')
-    # ax.yaxis.set_label_text('p(c_ij)')
-    # ax.set_title(
-    #     'p(c_ij) as a function of theta given five different questions')
-    # ax.legend(plot_legends)
-    # plt.savefig('p4d.png')
-
-    # theta = np.sort(theta)
-    # plt.figure(2)
-    # for j in range(5):
-    #     beta_j = beta[j]
-    #     cij = sigmoid(theta - beta_j)
-    #     plt.plot(theta, cij, label="Question #"+str(j))
-    # plt.title("Probability of Correct Response vs. Theta")
-    # plt.ylabel("Probability")
-    # plt.xlabel("Theta")
-    # plt.legend()
-    # plt.savefig("p4d.png")
 
     
 if __name__ == "__main__":
