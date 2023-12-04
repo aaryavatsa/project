@@ -163,23 +163,23 @@ def main():
     # that shows the probability of the correct response p(cij = 1) as a function of θ given a question j. 
     # Comment on the shape of the curves and briefly describe what these curves represent.
 
-    # j1 = 373
-    # j2 = 910
-    # j3 = 1432
+    j1 = 0
+    j2 = 50
+    j3 = 100
 
-    # theta_range = np.linspace(-3, 3, 100)
-    # p1 = sigmoid(theta_range - beta[j1])
-    # p2 = sigmoid(theta_range - beta[j2])
-    # p3 = sigmoid(theta_range - beta[j3])
+    theta_range = np.linspace(-3, 3, 100)
+    p1 = sigmoid(theta_range - beta[j1])
+    p2 = sigmoid(theta_range - beta[j2])
+    p3 = sigmoid(theta_range - beta[j3])
 
-    # plt.figure()
-    # plt.plot(theta_range, p1, label=f"j1 = {j1}")
-    # plt.plot(theta_range, p2, label=f"j2 = {j2}")
-    # plt.plot(theta_range, p3, label=f"j3 = {j3}")
-    # plt.xlabel("Theta")
-    # plt.ylabel("Probability of correct response")
-    # plt.legend()
-    # plt.savefig("irt_prob_correct_response.png")
+    plt.figure()
+    plt.plot(theta_range, p1, label=f"j1 = {j1}")
+    plt.plot(theta_range, p2, label=f"j2 = {j2}")
+    plt.plot(theta_range, p3, label=f"j3 = {j3}")
+    plt.xlabel("Theta")
+    plt.ylabel("Probability of correct response")
+    plt.legend()
+    plt.savefig("p4d.png")
     # N, D = 542, 1774
     # q_list = random.choices(np.arange(D), k=3)
     # plot_legends = []
@@ -205,17 +205,17 @@ def main():
     # ax.legend(plot_legends)
     # plt.savefig('p4d.png')
 
-    theta = np.sort(theta)
-    plt.figure(2)
-    for j in range(5):
-        beta_j = beta[j]
-        cij = sigmoid(theta - beta_j)
-        plt.plot(theta, cij, label="Question #"+str(j))
-    plt.title("Probability of Correct Response vs. Theta")
-    plt.ylabel("Probability")
-    plt.xlabel("Theta")
-    plt.legend()
-    plt.savefig("p4d.png")
+    # theta = np.sort(theta)
+    # plt.figure(2)
+    # for j in range(5):
+    #     beta_j = beta[j]
+    #     cij = sigmoid(theta - beta_j)
+    #     plt.plot(theta, cij, label="Question #"+str(j))
+    # plt.title("Probability of Correct Response vs. Theta")
+    # plt.ylabel("Probability")
+    # plt.xlabel("Theta")
+    # plt.legend()
+    # plt.savefig("p4d.png")
 
     
 if __name__ == "__main__":
