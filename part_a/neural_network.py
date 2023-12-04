@@ -109,7 +109,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
     valid_accuracies = []
 
     for epoch in range(0, num_epoch):
-        train_loss = model.get_weight_norm() * lamb / 2
+        train_loss = 0.
 
         for user_id in range(num_student):
             inputs = Variable(zero_train_data[user_id]).unsqueeze(0)
@@ -122,7 +122,8 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
-            loss = torch.sum((output - target) ** 2.)
+            # added L2 regularization term
+            loss = torch.sum((output - target) ** 2.) + (model.get_weight_norm() * lamb / 2)
             loss.backward()
 
             train_loss += loss.item()
@@ -132,14 +133,14 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
 
         print("Epoch: {} \tTraining Cost: {:.6f}\t "
               "Valid Acc: {}".format(epoch, train_loss, valid_acc))
-        train_losses.append(train_loss.item() / num_student)
+        train_losses.append(train_loss)
         valid_accuracies.append(valid_acc)
 
     # plotting for d
     _, axes = plt.subplots(nrows=1, ncols=2)
     axes[0].set_title('Training Loss over Epochs')
     axes[0].set_xlabel('Epoch')
-    axes[0].set_ylabel("MSE Loss")
+    axes[0].set_ylabel("Loss")
     axes[0].plot(train_losses, color='blue', label='Training Loss')
 
     axes[1].set_title('Validation Accuracy over Epochs')
@@ -200,7 +201,7 @@ def main():
     # lr_list = [0.01, 0.05, 0.1]
     num_epoch = 25
     # epoch_list = [10, 25, 50, 100, 250, 500]
-    lamb = 0.01
+    lamb = 0.
     # lamb_list = [0.001, 0.01, 0.1, 1]
 
     train(model, lr, lamb, train_matrix, zero_train_matrix,
